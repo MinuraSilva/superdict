@@ -1,3 +1,9 @@
+# ignore IntelliJ
+.idea/
+
+# ignore jupyter notebooks
+scratchwork/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
