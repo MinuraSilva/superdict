@@ -1,5 +1,6 @@
 import re
 import typing
+from collections import namedtuple
 
 primitives = tuple([str, int, float, bool])
 composites = tuple([dict, list, tuple, set, frozenset])
@@ -15,6 +16,7 @@ Other possible functions:
 - Get only leafs / primitives
 """
 
+iterator = namedtuple("iterator", ("obj_type", "data"))
 
 def recursive_find(obj, key_query=None, value_query=None):
     # key only applies to a dict.
@@ -24,25 +26,46 @@ def recursive_find(obj, key_query=None, value_query=None):
 
     validate_query(key_query, value_query)
 
-    if isinstance(obj, dict):
-        for key in obj.keys():
-            value = obj[key]
+    assert isinstance(obj, composites)
 
-            found_paths = process_sub(key, None, value, key_query, value_query)
-            matched_paths.extend(found_paths)
+    obj_type, data = iterate_composite(obj)
 
-    elif isinstance(obj, (list, tuple, set, frozenset)):
-        for items in enumerate(obj):
-            index = items[0]
-            value = items[1]
+    for identifier, value in data:  # identifier is either key (for dict) or index (for list)
+        found_paths = process_sub(obj_type, identifier, value, key_query, value_query)
+        matched_paths.extend(found_paths)
 
-            found_paths = process_sub(None, index, value, key_query, value_query)
-            matched_paths.extend(found_paths)
+    # if isinstance(obj, dict):
+    #     for key in obj.keys():
+    #         value = obj[key]
+    #
+    #         found_paths = process_sub(key, None, value, key_query, value_query)
+    #         matched_paths.extend(found_paths)
+    #
+    # elif isinstance(obj, (list, tuple, set, frozenset)):
+    #     for items in enumerate(obj):
+    #         index = items[0]
+    #         value = items[1]
+    #
+    #         found_paths = process_sub(None, index, value, key_query, value_query)
+    #         matched_paths.extend(found_paths)
 
     # make each of the paths tuples to signify that they are to be considered as a single entity
     matched_paths = [tuple(path) for path in matched_paths]
     return matched_paths
 
+
+def iterate_composite(composite):
+
+    if isinstance(composite, dict):
+        data = tuple(composite.items())
+        obj_type = "dict"
+    elif isinstance(composite, (list, tuple, set, frozenset)):
+        data = tuple(enumerate(composite))
+        obj_type = "list"
+    else:
+        raise ValueError("Composite must be a dict or list/tuple/set/frozenset")
+
+    return iterator(obj_type=obj_type, data=data)
 
 def validate_query(key_query=None, value_query=None):
     all_search_parameters = tuple([key_query, value_query])
@@ -62,24 +85,19 @@ def valid_non_function_query(query):
     return valid_non_none or (query is None)
 
 
-def process_sub(key=None, index=None, value=None, key_query=None, value_query=None):
+def process_sub(obj_type, identifier, value, key_query=None, value_query=None):
     # return None or a list of paths for matches
 
     list_of_matched_paths = []
 
-    if key is not None:
-        curr_path = key
-    else:
-        curr_path = index
-
     # check at current level
-    if compare(key, value, key_query, value_query):
-        list_of_matched_paths.append([curr_path])
+    if compare(obj_type, identifier, value, key_query, value_query):
+        list_of_matched_paths.append([identifier])
 
     # if obj is a composite, also recurse
     if isinstance(value, composites):
         new_paths = recursive_find(value, key_query, value_query)
-        updated_paths = list_path_join(curr_path, new_paths)
+        updated_paths = list_path_join(identifier, new_paths)
         list_of_matched_paths.extend(updated_paths)
 
     # if isinstance(value, primitives):
@@ -107,7 +125,9 @@ def compare_query(search_against, query):
         return compare_primitive(search_against, query)
 
 
-def compare(key=None, value=None, key_query=None, value_query=None):
+def compare(obj_type, identifier, value, key_query, value_query):
+
+
     def compare_single(search_against, query):
         """
         Return True if either there is nothing to search against or if the search matches.
@@ -117,10 +137,19 @@ def compare(key=None, value=None, key_query=None, value_query=None):
         else:
             return compare_query(search_against, query)
 
-    key_match = compare_single(key, key_query)
     value_match = compare_single(value, value_query)
 
-    return (key_match and value_match)
+    if (obj_type != "dict") and (key_query is not None):
+        # if a key search parameter is given when searching in a list, there cannot be a match since the dict does not
+        # have a key (the index is not considered a 'key').
+        return False
+    elif obj_type != "dict":
+        # if obj_type is a list (or its variants), only need to check the value.
+        return value_match
+    else:
+        # if obj_type is a dict, need to check both key and value.
+        key_match = compare_single(identifier, key_query)
+        return key_match and value_match
 
 
 def list_path_join(base, list_rest_of_path):
@@ -138,4 +167,4 @@ dicta = {
         "b": [1,2,3]},
     "a": "A"}
 
-print(recursive_find(dicta, None, 2))
+print(recursive_find(dicta, "a", "A"))
