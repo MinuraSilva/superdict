@@ -1,7 +1,7 @@
 import typing
 from collections import namedtuple
 
-from finder import process_sub, list_path_join
+import superdict.process.query_finder
 
 primitives = tuple([str, int, float, bool])
 composites = tuple([dict, list, tuple, set, frozenset])
@@ -19,7 +19,7 @@ Other possible functions:
 iterator = namedtuple("iterator", ("obj_type", "data"))
 
 
-def recursive_find(obj, key_query=None, value_query=None):
+def recursive_find(process_function, obj, key_query=None, value_query=None):
     # key only applies to a dict.
     # Lists have no explicit match function; they are always iterated through until a primitive or dict is reached
 
@@ -32,12 +32,12 @@ def recursive_find(obj, key_query=None, value_query=None):
     obj_type, data = iterate_composite(obj)
 
     for identifier, value in data:  # identifier is either key (for dict) or index (for list)
-        found_paths = process_sub(obj_type, identifier, value, key_query, value_query)
+        found_paths = process_function(obj_type, identifier, value, key_query, value_query)
         matched_paths.extend(found_paths)
 
         # # if obj is a composite, also recurse
         if isinstance(value, composites):
-            new_paths = recursive_find(value, key_query, value_query)
+            new_paths = recursive_find(process_function, value, key_query, value_query)
             updated_paths = list_path_join(identifier, new_paths)
             matched_paths.extend(updated_paths)
 
@@ -78,9 +78,19 @@ def valid_non_function_query(query):
     return valid_non_none or (query is None)
 
 
+def path_join(base, rest_of_path):
+    full_path = list(rest_of_path)
+    full_path.insert(0, base)
+    return full_path
+
+
+def list_path_join(base, list_rest_of_path):
+    return [path_join(base, path) for path in list_rest_of_path]
+
+
 dicta = {
     "b": {
         "b": [1,2,3]},
     "a": "A"}
 
-print(recursive_find(dicta, "b"))
+print(recursive_find(superdict.process.query_finder.finder, dicta, "b"))

@@ -8,7 +8,13 @@ main objects: flex_dict finder
 
 """
 
+"""
+!!!!!!!!! Warning: Do not change the name of this class to superdict.py because this will make conflict with the 
+package name in the namespace.
+"""
+
 import copy
+
 
 class flexdict(dict):
 
@@ -98,3 +104,5 @@ class ListTraverse(TraverseObject):
 
 class DictTraverse(TraverseObject):
     pass
+
+

@@ -1,7 +1,8 @@
 import re
 import typing
 
-def process_sub(obj_type, identifier, value, key_query=None, value_query=None):
+
+def finder(obj_type, identifier, value, key_query=None, value_query=None):
     # return None or a list of paths for matches
 
     list_of_matched_paths = []
@@ -14,7 +15,6 @@ def process_sub(obj_type, identifier, value, key_query=None, value_query=None):
 
 
 def compare(obj_type, identifier, value, key_query, value_query):
-
 
     def compare_single(search_against, query):
         """
@@ -53,11 +53,3 @@ def compare_query(search_against, query):
         return compare_primitive(search_against, query)
 
 
-def list_path_join(base, list_rest_of_path):
-    return [path_join(base, path) for path in list_rest_of_path]
-
-
-def path_join(base, rest_of_path):
-    full_path = list(rest_of_path)
-    full_path.insert(0, base)
-    return full_path
