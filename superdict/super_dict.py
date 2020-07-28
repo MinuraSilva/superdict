@@ -1,20 +1,23 @@
 
-"""
-# Core is a find method that returns the full path to the found values
-# Then, we can use this to either 'get' the values or change them
-
-main objects: flex_dict finder
-
-
-"""
 
 """
 !!!!!!!!! Warning: Do not change the name of this class to superdict.py because this will make conflict with the 
 package name in the namespace.
 """
 
-import copy
+"""
+Alternate way of making superdict:
+Simply iterate over the entire dictionary and create a list of [(key, value), (key, value) ... ] at every single level.
+Then on search, search on the keys, which could be efficiently done by turning it into a string and running a regex.
+Searching on values is even simpler since it is just a single piece of data.
 
+Disadvantage of this is that memory consumption will be considerably greater unless I only store the rows with the final
+values.
+"""
+
+import copy
+from superdict.traversal import recursive_find
+from superdict.processes.query_finder import finder
 
 class flexdict(dict):
 
@@ -31,7 +34,26 @@ class flexdict(dict):
         """
         super(flexdict, self).__init__(*args, **kwargs)
 
-    def search_by_key(self, query_or_match_function, strict_or_not):
+    def search(self, process_function, obj, key_queries=None, value_queries=None):
+        if not isinstance(key_queries, list):
+            key_queries
+
+
+    def search_by_keys(self, obj, key_queries=None, strict=False):
+
+        found_paths = []
+        search_dict = dict(self)
+
+        if not isinstance(key_queries, list):
+            key_queries = list(key_queries)
+
+        if not strict:
+            # effectively, a wildcard between each key
+            for key_query in key_queries:
+                recursive_find(finder, )
+                recursive_find(finder, )
+
+
         # return nothing; only populate the find_locations
         # query either string ot regex. match_function must return boolean.
         pass
@@ -72,6 +94,9 @@ class flexdict(dict):
 
     def do_otherthing(self):
         pass
+
+
+
 
 
 class TraverseComponent:

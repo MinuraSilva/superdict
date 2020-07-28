@@ -1,7 +1,8 @@
 import typing
 from collections import namedtuple
 
-import superdict.process.query_finder
+import superdict.processes.query_finder
+from superdict.processes.utils import list_index
 
 primitives = tuple([str, int, float, bool])
 composites = tuple([dict, list, tuple, set, frozenset])
@@ -27,7 +28,9 @@ def recursive_find(process_function, obj, key_query=None, value_query=None):
 
     validate_query(key_query, value_query)
 
-    assert isinstance(obj, composites)
+    # assert isinstance(obj, composites)
+    if not isinstance(obj, composites):
+        return []  # nothing to find if given a primitive
 
     obj_type, data = iterate_composite(obj)
 
@@ -47,17 +50,26 @@ def recursive_find(process_function, obj, key_query=None, value_query=None):
 
 
 def iterate_composite(composite):
-
     if isinstance(composite, dict):
         data = tuple(composite.items())
         obj_type = "dict"
     elif isinstance(composite, (list, tuple, set, frozenset)):
-        data = tuple(enumerate(composite))
+        # data = tuple(enumerate(composite))
+        data = enumerate_list(composite)
         obj_type = "list"
     else:
         raise ValueError("Composite must be a dict or list/tuple/set/frozenset")
 
     return iterator(obj_type=obj_type, data=data)
+
+def enumerate_list(lis):
+    ret = []
+
+    for index in range(len(lis)):
+        ret.append((list_index(index), lis[index]))
+
+    return tuple(ret)
+
 
 
 def validate_query(key_query=None, value_query=None):
@@ -88,9 +100,12 @@ def list_path_join(base, list_rest_of_path):
     return [path_join(base, path) for path in list_rest_of_path]
 
 
-dicta = {
-    "b": {
-        "b": [1,2,3]},
-    "a": "A"}
+if __name__ == "__main__":
+    dicta = {
+        "b": {
+            0: [1, 2, 3]},
+        "a": "A"}
 
-print(recursive_find(superdict.process.query_finder.finder, dicta, "b"))
+    x = recursive_find(superdict.processes.query_finder.finder, dicta, None, 2)
+
+    print(recursive_find(superdict.processes.query_finder.finder, dicta, None, 2))
